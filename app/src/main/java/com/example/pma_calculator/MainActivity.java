@@ -10,9 +10,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    // Требования к экрану (можешь поменять под методичку)
     private static final int REQ_MIN_WIDTH_DP = 360;
     private static final int REQ_MIN_HEIGHT_DP = 640;
+
+    private android.view.View panelScientific;
 
     private TextView tvExpr;
     private TextView tvValue;
@@ -29,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
+
+        panelScientific = findViewById(R.id.panelScientific);
 
         tvExpr = findViewById(R.id.tvExpr);
         tvValue = findViewById(R.id.tvValue);
@@ -78,6 +81,14 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnEq).setOnClickListener(v -> {
             if (!calc.equals()) showError(calc.getLastError());
             refreshUi();
+        });
+
+        findViewById(R.id.btnFunc).setOnClickListener(v -> {
+            if (panelScientific.getVisibility() == android.view.View.VISIBLE) {
+                panelScientific.setVisibility(android.view.View.GONE);
+            } else {
+                panelScientific.setVisibility(android.view.View.VISIBLE);
+            }
         });
     }
 

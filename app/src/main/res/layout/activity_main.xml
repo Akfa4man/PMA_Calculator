@@ -21,7 +21,41 @@
         android:gravity="end"
         android:text="0"
         android:paddingTop="6dp"
-        android:paddingBottom="12dp" />
+        android:paddingBottom="8dp" />
+
+    <!-- Панель инженерных функций (появляется по кнопке FUNC) -->
+    <LinearLayout
+        android:id="@+id/panelScientific"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        android:paddingBottom="8dp">
+
+        <Button
+            android:id="@+id/btnSin"
+            android:backgroundTint="#FF8C00"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="sin" />
+
+        <Button
+            android:id="@+id/btnCos"
+            android:backgroundTint="#FF8C00"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="cos" />
+
+        <Button
+            android:id="@+id/btnPow"
+            android:backgroundTint="#FF8C00"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="x^y" />
+    </LinearLayout>
 
     <GridLayout
         android:layout_width="match_parent"
@@ -34,8 +68,18 @@
 
         <!-- Row 1 -->
         <Button
+            android:id="@+id/btnFunc"
+            android:text="FUNC"
+            android:backgroundTint="#5c6163"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1" />
+
+        <Button
             android:id="@+id/btnClear"
             android:text="C"
+            android:backgroundTint="#B22222"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -44,31 +88,7 @@
         <Button
             android:id="@+id/btnBack"
             android:text="⌫"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-
-        <Button
-            android:id="@+id/btnSin"
-            android:text="sin"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-
-        <Button
-            android:id="@+id/btnCos"
-            android:text="cos"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-
-        <!-- Row 2 -->
-        <Button
-            android:id="@+id/btnPow"
-            android:text="x^y"
+            android:backgroundTint="#B22222"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -77,31 +97,17 @@
         <Button
             android:id="@+id/btnDiv"
             android:text="÷"
+            android:backgroundTint="#FF8C00"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
 
-        <Button
-            android:id="@+id/btnMul"
-            android:text="×"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-
-        <Button
-            android:id="@+id/btnSub"
-            android:text="−"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-
-        <!-- Row 3 -->
+        <!-- Row 2 -->
         <Button
             android:id="@+id/btn7"
             android:text="7"
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -110,6 +116,7 @@
         <Button
             android:id="@+id/btn8"
             android:text="8"
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -118,23 +125,27 @@
         <Button
             android:id="@+id/btn9"
             android:text="9"
+
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
 
         <Button
-            android:id="@+id/btnAdd"
-            android:text="+"
+            android:id="@+id/btnMul"
+            android:text="×"
+            android:backgroundTint="#FF8C00"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
 
-        <!-- Row 4 -->
+        <!-- Row 3 -->
         <Button
             android:id="@+id/btn4"
             android:text="4"
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -143,6 +154,7 @@
         <Button
             android:id="@+id/btn5"
             android:text="5"
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -151,24 +163,26 @@
         <Button
             android:id="@+id/btn6"
             android:text="6"
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
-
 
         <Button
-            android:id="@+id/btnEq"
-            android:text="="
+            android:id="@+id/btnSub"
+            android:text="−"
+            android:backgroundTint="#FF8C00"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
 
-        <!-- Row 5 -->
+        <!-- Row 4 -->
         <Button
             android:id="@+id/btn1"
             android:text="1"
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -177,6 +191,7 @@
         <Button
             android:id="@+id/btn2"
             android:text="2"
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
@@ -185,29 +200,58 @@
         <Button
             android:id="@+id/btn3"
             android:text="3"
+            android:backgroundTint="#000000"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
 
+        <Button
+            android:id="@+id/btnAdd"
+            android:text="+"
+            android:backgroundTint="#FF8C00"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1" />
+
+        <!-- Row 5 -->
+        <Button
+            android:id="@+id/btn0"
+            android:text="0"
+            android:backgroundTint="#000000"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="2"
+            android:layout_rowWeight="1"
+            android:layout_columnSpan="2" />
+
+        <Button
+            android:id="@+id/btnComma"
+            android:text=","
+            android:backgroundTint="#000000"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1" />
+
+        <Button
+            android:id="@+id/btnEq"
+            android:text="="
+            android:backgroundTint="#FF8C00"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1" />
+
+        <!-- Row 6 (оставим пустой для ровной сетки) -->
         <Space
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
 
-        <!-- Row 6 -->
-        <Button
-            android:id="@+id/btn0"
-            android:text="0"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-
-        <Button
-            android:id="@+id/btnComma"
-            android:text=","
+        <Space
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"

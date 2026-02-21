@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="12dp"
     android:layout_width="match_parent"
@@ -21,9 +22,13 @@
         android:gravity="end"
         android:text="0"
         android:paddingTop="6dp"
-        android:paddingBottom="8dp" />
+        android:paddingBottom="8dp"
+        app:autoSizeTextType="uniform"
+        app:autoSizeMinTextSize="18sp"
+        app:autoSizeMaxTextSize="34sp"
+        app:autoSizeStepGranularity="1sp" />
 
-    <!-- Панель инженерных функций (появляется по кнопке FUNC) -->
+    <!-- Панель инженерных функций -->
     <LinearLayout
         android:id="@+id/panelScientific"
         android:layout_width="match_parent"
@@ -38,7 +43,12 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="sin" />
+            android:text="sin"
+            android:onClick="onSin"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="12sp"
+            app:autoSizeMaxTextSize="20sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnCos"
@@ -46,7 +56,12 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="cos" />
+            android:text="cos"
+            android:onClick="onCos"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="12sp"
+            app:autoSizeMaxTextSize="20sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnPow"
@@ -54,7 +69,12 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="x^y" />
+            android:text="x^y"
+            android:onClick="onPow"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="12sp"
+            app:autoSizeMaxTextSize="20sp"
+            app:autoSizeStepGranularity="1sp" />
     </LinearLayout>
 
     <GridLayout
@@ -69,200 +89,291 @@
         <!-- Row 1 -->
         <Button
             android:id="@+id/btnFunc"
-            android:text="FUNC"
+            android:text="Fn"
             android:backgroundTint="#5c6163"
+            android:onClick="onFunc"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="10sp"
+            app:autoSizeMaxTextSize="18sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnClear"
             android:text="C"
             android:backgroundTint="#B22222"
+            android:onClick="onClear"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="14sp"
+            app:autoSizeMaxTextSize="24sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnBack"
             android:text="⌫"
             android:backgroundTint="#B22222"
+            android:onClick="onBack"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="14sp"
+            app:autoSizeMaxTextSize="24sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnDiv"
             android:text="÷"
             android:backgroundTint="#FF8C00"
+            android:onClick="onDiv"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <!-- Row 2 -->
         <Button
             android:id="@+id/btn7"
             android:text="7"
             android:backgroundTint="#000000"
+            android:onClick="onDigit7"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btn8"
             android:text="8"
             android:backgroundTint="#000000"
+            android:onClick="onDigit8"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btn9"
             android:text="9"
-
             android:backgroundTint="#000000"
+            android:onClick="onDigit9"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnMul"
             android:text="×"
             android:backgroundTint="#FF8C00"
+            android:onClick="onMul"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <!-- Row 3 -->
         <Button
             android:id="@+id/btn4"
             android:text="4"
             android:backgroundTint="#000000"
+            android:onClick="onDigit4"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btn5"
             android:text="5"
             android:backgroundTint="#000000"
+            android:onClick="onDigit5"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btn6"
             android:text="6"
             android:backgroundTint="#000000"
+            android:onClick="onDigit6"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnSub"
             android:text="−"
             android:backgroundTint="#FF8C00"
+            android:onClick="onSub"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <!-- Row 4 -->
         <Button
             android:id="@+id/btn1"
             android:text="1"
             android:backgroundTint="#000000"
+            android:onClick="onDigit1"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btn2"
             android:text="2"
             android:backgroundTint="#000000"
+            android:onClick="onDigit2"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btn3"
             android:text="3"
             android:backgroundTint="#000000"
+            android:onClick="onDigit3"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnAdd"
             android:text="+"
             android:backgroundTint="#FF8C00"
+            android:onClick="onAdd"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <!-- Row 5 -->
         <Button
             android:id="@+id/btn0"
             android:text="0"
             android:backgroundTint="#000000"
+            android:onClick="onDigit0"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="2"
             android:layout_rowWeight="1"
-            android:layout_columnSpan="2" />
+            android:layout_columnSpan="2"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnComma"
             android:text=","
             android:backgroundTint="#000000"
+            android:onClick="onComma"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <Button
             android:id="@+id/btnEq"
             android:text="="
             android:backgroundTint="#FF8C00"
+            android:onClick="onEq"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="16sp"
+            app:autoSizeMaxTextSize="28sp"
+            app:autoSizeStepGranularity="1sp" />
 
-        <!-- Row 6 (оставим пустой для ровной сетки) -->
+        <!-- Row 6 -->
         <Space
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
-
         <Space
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
-
         <Space
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_columnWeight="1"
             android:layout_rowWeight="1" />
-
         <Space
             android:layout_width="0dp"
             android:layout_height="0dp"

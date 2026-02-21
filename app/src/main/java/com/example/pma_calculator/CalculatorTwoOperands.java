@@ -1,174 +1,204 @@
 package com.example.pma_calculator;
 
+import android.os.Bundle;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
+
 public class CalculatorTwoOperands {
 
     public enum Op { NONE, ADD, SUB, MUL, DIV, POW }
 
-    private StringBuilder input = new StringBuilder();
+    private final StringBuilder input = new StringBuilder();
     private String operand1 = null;
     private Op op = Op.NONE;
-
-    private boolean enteringSecond = false;
     private boolean resultShown = false;
 
-    private String lastError = null;
-    public String getLastError() { return lastError; }
+    private String lastError = "";
+
+    public void appendDigit(int digit) {
+        if (resultShown) clear();
+
+        if (input.length() == 0) {
+            if (digit == 0) {
+                input.append('0');
+            } else {
+                input.append((char) ('0' + digit));
+            }
+            return;
+        }
+
+        if (input.length() == 1 && input.charAt(0) == '0' && input.indexOf(".") < 0) {
+            if (digit == 0) return;
+            input.setLength(0);
+            input.append((char) ('0' + digit));
+            return;
+        }
+
+        input.append((char) ('0' + digit));
+    }
+
+    public boolean appendComma() {
+        if (resultShown) clear();
+        if (input.indexOf(".") >= 0) {
+            lastError = "Число уже содержит запятую.";
+            return false;
+        }
+        if (input.length() == 0) input.append("0");
+        input.append(".");
+        return true;
+    }
+
+    public void backspace() {
+        if (resultShown) { clear(); return; }
+        if (input.length() > 0)
+            input.deleteCharAt(input.length() - 1);
+    }
 
     public void clear() {
         input.setLength(0);
         operand1 = null;
         op = Op.NONE;
-        enteringSecond = false;
         resultShown = false;
-        lastError = null;
-    }
-
-    public void backspace() {
-        lastError = null;
-        if (resultShown) {
-            input.setLength(0);
-            resultShown = false;
-            return;
-        }
-        if (input.length() > 0) input.deleteCharAt(input.length() - 1);
-    }
-
-    public void appendDigit(int d) {
-        lastError = null;
-        if (resultShown) clear();
-        input.append(d);
-    }
-
-    public boolean appendComma() {
-        lastError = null;
-        if (resultShown) clear();
-
-        if (input.indexOf(",") >= 0) {
-            lastError = "В числе уже есть запятая.";
-            return false;
-        }
-        if (input.length() == 0) input.append("0");
-        input.append(",");
-        return true;
     }
 
     public void setOp(Op newOp) {
-        lastError = null;
-
-        if (!enteringSecond) {
-            operand1 = normalizeNumber(input.length() == 0 ? "0" : input.toString());
-            input.setLength(0);
-            enteringSecond = true;
+        if (!hasInput()) {
+            lastError = "Введите число.";
+            return;
         }
+        operand1 = input.toString();
+        input.setLength(0);
         op = newOp;
         resultShown = false;
     }
 
     public boolean equals() {
-        lastError = null;
+        return applyBinary((a, b) -> {
+            switch (op) {
+                case ADD: return a + b;
+                case SUB: return a - b;
+                case MUL: return a * b;
+                case DIV:
+                    if (b == 0) throw new ArithmeticException("Деление на ноль!");
+                    return a / b;
+                case POW: return Math.pow(a, b);
+                default: throw new IllegalStateException();
+            }
+        });
+    }
 
-        if (op == Op.NONE) {
-            lastError = "Оператор не выбран.";
+    public boolean applySin() { return applyUnary(Math::sin); }
+    public boolean applyCos() { return applyUnary(Math::cos); }
+
+    private boolean applyUnary(DoubleUnaryOperator operator) {
+        if (!hasInput()) {
+            lastError = "Введите число.";
             return false;
         }
+        try {
+            double value = parse(input.toString());
+            double result = operator.applyAsDouble(value);
+            showResult(result);
+            return true;
+        } catch (Exception e) {
+            lastError = "Ошибка вычисления.";
+            return false;
+        }
+    }
+
+    private boolean applyBinary(DoubleBinaryOperator operator) {
         if (operand1 == null) {
-            lastError = "Первый операнд не задан.";
+            lastError = "Недостаточно данных.";
             return false;
         }
 
-        String operand2Text = input.length() == 0 ? "0" : input.toString();
+        String bText = (input.length() == 0) ? "0" : input.toString();
 
-        Double a = parseOrError(operand1);
-        Double b = parseOrError(normalizeNumber(operand2Text));
-        if (a == null || b == null) return false;
-
-        double res;
-        switch (op) {
-            case ADD: res = a + b; break;
-            case SUB: res = a - b; break;
-            case MUL: res = a * b; break;
-            case DIV:
-                if (b == 0.0) {
-                    lastError = "Деление на 0 запрещено.";
-                    return false;
-                }
-                res = a / b;
-                break;
-            case POW:
-                res = Math.pow(a, b);
-                break;
-            default:
-                lastError = "Неизвестная операция.";
-                return false;
+        try {
+            double a = parse(operand1);
+            double b = parse(bText);
+            double result = operator.applyAsDouble(a, b);
+            showResult(result);
+            return true;
+        } catch (Exception e) {
+            lastError = e.getMessage() != null ? e.getMessage() : "Ошибка вычисления.";
+            return false;
         }
+    }
 
+    private void showResult(double value) {
         input.setLength(0);
-        input.append(formatNumber(res));
-
+        input.append(format(value));
         operand1 = null;
         op = Op.NONE;
-        enteringSecond = false;
         resultShown = true;
-        return true;
-    }
-
-    public boolean applySin() { return applyUnaryTrig(true); }
-    public boolean applyCos() { return applyUnaryTrig(false); }
-
-    private boolean applyUnaryTrig(boolean sin) {
-        lastError = null;
-
-        String xText = input.length() == 0 ? "0" : input.toString();
-        Double x = parseOrError(normalizeNumber(xText));
-        if (x == null) return false;
-
-        // sin/cos работают в радианах
-        double res = sin ? Math.sin(x) : Math.cos(x);
-
-        input.setLength(0);
-        input.append(formatNumber(res));
-        resultShown = true;
-        return true;
-    }
-
-    public String getExpressionText() {
-        String a = operand1 == null ? "" : denormalizeNumber(operand1);
-        String opText = opToText(op);
-        if (!enteringSecond) return a.isEmpty() ? "" : a;
-        return (a.isEmpty() ? "0" : a) + " " + opText;
     }
 
     public String getCurrentText() {
-        return input.length() == 0 ? "0" : input.toString();
+        return input.length() == 0 ? "0" : input.toString().replace('.', ',');
     }
 
-    private String opToText(Op op) {
+    public String getExpressionText() {
+        if (operand1 == null || op == Op.NONE) return "";
+
+        String symbol;
+
         switch (op) {
-            case ADD: return "+";
-            case SUB: return "−";
-            case MUL: return "×";
-            case DIV: return "÷";
-            case POW: return "^";
-            default: return "";
+            case ADD:
+                symbol = "+";
+                break;
+            case SUB:
+                symbol = "−";
+                break;
+            case MUL:
+                symbol = "×";
+                break;
+            case DIV:
+                symbol = "÷";
+                break;
+            case POW:
+                symbol = "^";
+                break;
+            default:
+                symbol = "";
         }
+
+        return operand1.replace('.', ',') + " " + symbol;
     }
 
-    private String normalizeNumber(String s) { return s.replace(',', '.'); }
-    private String denormalizeNumber(String s) { return s.replace('.', ','); }
-
-    private Double parseOrError(String s) {
-        try { return Double.parseDouble(s); }
-        catch (Exception e) { lastError = "Некорректное число."; return null; }
+    public String getLastError() {
+        return lastError;
     }
 
-    private String formatNumber(double v) {
-        String s = Double.toString(v);
-        if (s.contains("E") || s.contains("e")) return denormalizeNumber(s);
+    private boolean hasInput() {
+        return input.length() > 0;
+    }
 
-        if (s.contains(".")) {
-            while (s.endsWith("0")) s = s.substring(0, s.length() - 1);
-            if (s.endsWith(".")) s = s.substring(0, s.length() - 1);
-        }
-        return denormalizeNumber(s);
+    private double parse(String s) {
+        return Double.parseDouble(s);
+    }
+
+    private String format(double value) {
+        return (value == (long) value)
+                ? String.valueOf((long) value)
+                : String.valueOf(value);
+    }
+
+    public void saveTo(Bundle out) {
+        out.putString("calc_input", input.toString());
+        out.putString("calc_operand1", operand1);
+        out.putString("calc_op", op.name());
+        out.putBoolean("calc_resultShown", resultShown);
+    }
+
+    public void restoreFrom(Bundle in) {
+        input.setLength(0);
+        input.append(in.getString("calc_input", ""));
+        operand1 = in.getString("calc_operand1", null);
+
+        try { op = Op.valueOf(in.getString("calc_op", Op.NONE.name())); }
+        catch (Exception e) { op = Op.NONE; }
+
+        resultShown = in.getBoolean("calc_resultShown", false);
     }
 }

@@ -359,26 +359,21 @@
             app:autoSizeStepGranularity="1sp" />
 
         <!-- Row 6 -->
-        <Space
+        <!-- Row 6 -->
+        <Button
+            android:id="@+id/btnExit"
+            android:text="Выход"
+            android:backgroundTint="#5c6163"
+            android:onClick="onExit"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_columnWeight="4"
+            android:layout_rowWeight="1"
+            android:layout_columnSpan="4"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="14sp"
+            app:autoSizeMaxTextSize="24sp"
+            app:autoSizeStepGranularity="1sp" />
 
     </GridLayout>
 

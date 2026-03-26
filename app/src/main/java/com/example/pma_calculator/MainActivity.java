@@ -51,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
 
         calc.saveTo(outState);
-
         outState.putBoolean(KEY_PANEL_SCI_VISIBLE, panelScientific.getVisibility() == View.VISIBLE);
     }
 
@@ -95,6 +94,10 @@ public class MainActivity extends AppCompatActivity {
     public void onBack(View v) {
         calc.backspace();
         refreshUi();
+    }
+
+    public void onExit(View v) {
+        finish();
     }
 
     // --- Инженерные функции ---

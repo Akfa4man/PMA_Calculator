@@ -92,7 +92,7 @@
         android:layout_height="match_parent"
         android:layout_weight="2"
         android:columnCount="5"
-        android:rowCount="4"
+        android:rowCount="5"
         android:useDefaultMargins="true"
         android:alignmentMode="alignMargins">
 
@@ -367,11 +367,22 @@
             app:autoSizeMaxTextSize="28sp"
             app:autoSizeStepGranularity="1sp" />
 
-        <Space
+        <Button
+            android:id="@+id/btnExit"
+            android:text="Выход"
+            android:backgroundTint="#5c6163"
+            android:onClick="onExit"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_columnWeight="1"
-            android:layout_rowWeight="1" />
+            android:layout_column="0"
+            android:layout_row="4"
+            android:layout_columnSpan="5"
+            android:layout_columnWeight="5"
+            android:layout_rowWeight="1"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="12sp"
+            app:autoSizeMaxTextSize="20sp"
+            app:autoSizeStepGranularity="1sp" />
 
     </GridLayout>
 

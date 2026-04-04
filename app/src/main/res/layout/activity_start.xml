@@ -18,9 +18,8 @@
         android:id="@+id/btnGraphs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Графики"
-        android:enabled="false"
-        android:alpha="0.5"
+        android:text="График"
+        android:onClick="onOpenGraph"
         android:layout_marginBottom="16dp" />
 
     <Button

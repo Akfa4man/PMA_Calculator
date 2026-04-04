@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <com.example.pma_calculator.GraphCanvasView
+        android:id="@+id/graphCanvas"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#FFFFFF" />
+
+    <TextView
+        android:id="@+id/tvGraphPointInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:text="Нажмите для точки, перетаскивайте для сдвига, разведите пальцы для масштаба"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btnExitGraph"
+        android:text="Выход"
+        android:backgroundTint="#5c6163"
+        android:onClick="onExitGraph"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:autoSizeTextType="uniform"
+        app:autoSizeMinTextSize="14sp"
+        app:autoSizeMaxTextSize="24sp"
+        app:autoSizeStepGranularity="1sp" />
+
+</LinearLayout>

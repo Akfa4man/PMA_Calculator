@@ -20,6 +20,12 @@ public class StartActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    // Кнопка "График"
+    public void onOpenGraph(View v) {
+        Intent intent = new Intent(this, GraphActivity.class);
+        startActivity(intent);
+    }
+
     // Кнопка "Выход"
     public void onExitApp(View v) {
         finishAffinity();

@@ -34,6 +34,8 @@ public class GraphCanvasView extends View {
     // Числа на осях показываем только при достаточном приближении
     private static final float AXIS_LABEL_MIN_ZOOM = 1.8f;
 
+    private static final float EXTREMUM_TAP_RADIUS_PX = 28f;
+
     private final Paint gridPaint = new Paint();
     private final Paint axisPaint = new Paint();
     private final Paint graphPaint = new Paint();
@@ -492,9 +494,19 @@ public class GraphCanvasView extends View {
         return getVisibleTop() - (screenY / height) * getVisibleYSpan();
     }
 
-    private void selectPointAt(float screenX, int width) {
-        selectedX = screenToMathX(screenX, width);
-        selectedY = calculateY(selectedX);
+    private void selectPointAt(float screenX, float screenY, int width, int height) {
+        ensureGraphDataPrepared(width);
+
+        GraphPoint tappedExtremum = findExtremumNear(screenX, screenY, width, height);
+
+        if (tappedExtremum != null) {
+            selectedX = tappedExtremum.x;
+            selectedY = tappedExtremum.y;
+        } else {
+            selectedX = screenToMathX(screenX, width);
+            selectedY = calculateY(selectedX);
+        }
+
         pointSelected = true;
 
         if (onPointSelectedListener != null) {
@@ -502,6 +514,23 @@ public class GraphCanvasView extends View {
         }
 
         invalidate();
+    }
+
+    private GraphPoint findExtremumNear(float touchX, float touchY, int width, int height) {
+        for (GraphPoint point : extremaPoints) {
+            float sx = mapX(point.x, width);
+            float sy = mapY(point.y, height);
+
+            float dx = touchX - sx;
+            float dy = touchY - sy;
+            float distance = (float) Math.hypot(dx, dy);
+
+            if (distance <= EXTREMUM_TAP_RADIUS_PX) {
+                return point;
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -520,7 +549,7 @@ public class GraphCanvasView extends View {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
             if (!scaleDetector.isInProgress() && !isDragging) {
-                selectPointAt(e.getX(), getWidth());
+                selectPointAt(e.getX(), e.getY(), getWidth(), getHeight());
                 return true;
             }
             return false;

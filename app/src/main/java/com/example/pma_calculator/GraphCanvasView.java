@@ -12,6 +12,8 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewConfiguration;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class GraphCanvasView extends View {
@@ -39,9 +41,14 @@ public class GraphCanvasView extends View {
     private final Paint pointLinePaint = new Paint();
     private final Paint textPaint = new Paint();
 
+    private final Paint extremaFillPaint = new Paint();
+    private final Paint extremaStrokePaint = new Paint();
+
     private final ScaleGestureDetector scaleDetector;
     private final GestureDetector gestureDetector;
     private final int touchSlop;
+
+    private final GraphDatabaseHelper dbHelper;
 
     private float zoom = 1.0f;
     private double centerX = 0.0;
@@ -55,6 +62,11 @@ public class GraphCanvasView extends View {
     private float lastTouchY = 0f;
     private boolean isDragging = false;
 
+    private boolean graphDataDirty = true;
+
+    private final List<GraphPoint> sampledPoints = new ArrayList<>();
+    private final List<GraphPoint> extremaPoints = new ArrayList<>();
+
     private OnPointSelectedListener onPointSelectedListener;
 
     public interface OnPointSelectedListener {
@@ -66,6 +78,7 @@ public class GraphCanvasView extends View {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         scaleDetector = new ScaleGestureDetector(context, new ScaleListener());
         gestureDetector = new GestureDetector(context, new TapListener());
+        dbHelper = new GraphDatabaseHelper(context.getApplicationContext());
         init();
     }
 
@@ -74,6 +87,7 @@ public class GraphCanvasView extends View {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         scaleDetector = new ScaleGestureDetector(context, new ScaleListener());
         gestureDetector = new GestureDetector(context, new TapListener());
+        dbHelper = new GraphDatabaseHelper(context.getApplicationContext());
         init();
     }
 
@@ -82,6 +96,7 @@ public class GraphCanvasView extends View {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         scaleDetector = new ScaleGestureDetector(context, new ScaleListener());
         gestureDetector = new GestureDetector(context, new TapListener());
+        dbHelper = new GraphDatabaseHelper(context.getApplicationContext());
         init();
     }
 
@@ -113,6 +128,15 @@ public class GraphCanvasView extends View {
         textPaint.setTextSize(24f);
         textPaint.setAntiAlias(true);
 
+        extremaFillPaint.setColor(Color.YELLOW);
+        extremaFillPaint.setStyle(Paint.Style.FILL);
+        extremaFillPaint.setAntiAlias(true);
+
+        extremaStrokePaint.setColor(Color.BLACK);
+        extremaStrokePaint.setStyle(Paint.Style.STROKE);
+        extremaStrokePaint.setStrokeWidth(3f);
+        extremaStrokePaint.setAntiAlias(true);
+
         setBackgroundColor(Color.WHITE);
     }
 
@@ -127,18 +151,48 @@ public class GraphCanvasView extends View {
         int width = getWidth();
         int height = getHeight();
 
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+
+        ensureGraphDataPrepared(width);
+
         drawGrid(canvas, width, height);
         drawAxes(canvas, width, height);
         drawAxisLabels(canvas, width, height);
         drawGraph(canvas, width, height);
+        drawExtrema(canvas, width, height);
 
         if (pointSelected) {
             drawSelectedPoint(canvas, width, height);
         }
     }
 
+    private void ensureGraphDataPrepared(int width) {
+        if (!graphDataDirty) {
+            return;
+        }
+
+        sampledPoints.clear();
+        extremaPoints.clear();
+
+        for (int px = 0; px <= width; px++) {
+            double x = screenToMathX(px, width);
+            double y = calculateY(x);
+
+            sampledPoints.add(new GraphPoint(px, x, y));
+        }
+
+        // Перед новым построением очищаем таблицу и заново записываем точки
+        dbHelper.replacePoints(sampledPoints);
+
+        // Экстремумы определяем на основании данных, записанных в БД
+        extremaPoints.addAll(dbHelper.findExtremaPoints());
+
+        graphDataDirty = false;
+    }
+
     private void drawGrid(Canvas canvas, int width, int height) {
-        // Шаг сетки всегда 30x30 пикселей — основное ТЗ сохраняется
         for (int x = 0; x <= width; x += GRID_STEP) {
             canvas.drawLine(x, 0, x, height, gridPaint);
         }
@@ -201,7 +255,6 @@ public class GraphCanvasView extends View {
                 continue;
             }
 
-            // Небольшая риска на оси
             canvas.drawLine(sx, xAxisY - 8f, sx, xAxisY + 8f, axisPaint);
 
             String text = formatAxisValue(value);
@@ -234,7 +287,6 @@ public class GraphCanvasView extends View {
                 continue;
             }
 
-            // Небольшая риска на оси
             canvas.drawLine(yAxisX - 8f, sy, yAxisX + 8f, sy, axisPaint);
 
             String text = formatAxisValue(value);
@@ -296,15 +348,16 @@ public class GraphCanvasView extends View {
     }
 
     private void drawGraph(Canvas canvas, int width, int height) {
+        if (sampledPoints.isEmpty()) {
+            return;
+        }
+
         Path path = new Path();
         boolean firstPoint = true;
 
-        for (int px = 0; px <= width; px++) {
-            double x = screenToMathX(px, width);
-            double y = calculateY(x);
-
-            float screenX = mapX(x, width);
-            float screenY = mapY(y, height);
+        for (GraphPoint point : sampledPoints) {
+            float screenX = mapX(point.x, width);
+            float screenY = mapY(point.y, height);
 
             if (firstPoint) {
                 path.moveTo(screenX, screenY);
@@ -315,6 +368,20 @@ public class GraphCanvasView extends View {
         }
 
         canvas.drawPath(path, graphPaint);
+    }
+
+    private void drawExtrema(Canvas canvas, int width, int height) {
+        for (GraphPoint point : extremaPoints) {
+            float sx = mapX(point.x, width);
+            float sy = mapY(point.y, height);
+
+            if (sx < -20 || sx > width + 20 || sy < -20 || sy > height + 20) {
+                continue;
+            }
+
+            canvas.drawCircle(sx, sy, 12f, extremaFillPaint);
+            canvas.drawCircle(sx, sy, 12f, extremaStrokePaint);
+        }
     }
 
     private void drawSelectedPoint(Canvas canvas, int width, int height) {
@@ -361,6 +428,7 @@ public class GraphCanvasView extends View {
                     panByPixels(dx, dy, getWidth(), getHeight());
                     lastTouchX = event.getX();
                     lastTouchY = event.getY();
+                    graphDataDirty = true;
                     invalidate();
                 }
 
@@ -436,6 +504,18 @@ public class GraphCanvasView extends View {
         invalidate();
     }
 
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        graphDataDirty = true;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        dbHelper.close();
+    }
+
     private class TapListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
@@ -469,6 +549,7 @@ public class GraphCanvasView extends View {
             centerX = focusMathXBefore - (detector.getFocusX() / width - 0.5) * newXSpan;
             centerY = focusMathYBefore - (0.5 - detector.getFocusY() / height) * newYSpan;
 
+            graphDataDirty = true;
             invalidate();
             return true;
         }

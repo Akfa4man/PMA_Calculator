@@ -12,7 +12,11 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewConfiguration;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class GraphCanvasView extends View {
 
@@ -31,6 +35,10 @@ public class GraphCanvasView extends View {
 
     // Числа на осях показываем только при достаточном приближении
     private static final float AXIS_LABEL_MIN_ZOOM = 1.8f;
+    private static final float EXTREMUM_TAP_RADIUS_PX = 28f;
+
+    // Задержка перед записью данных графика в БД после окончания активного перемещения/масштабирования
+    private static final long DB_SYNC_DELAY_MS = 180L;
 
     private final Paint gridPaint = new Paint();
     private final Paint axisPaint = new Paint();
@@ -39,9 +47,22 @@ public class GraphCanvasView extends View {
     private final Paint pointLinePaint = new Paint();
     private final Paint textPaint = new Paint();
 
+    private final Paint extremaFillPaint = new Paint();
+    private final Paint extremaStrokePaint = new Paint();
+
     private final ScaleGestureDetector scaleDetector;
     private final GestureDetector gestureDetector;
     private final int touchSlop;
+
+    private final GraphDatabaseHelper dbHelper;
+    private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor();
+
+    private final Runnable dbSyncRunnable = new Runnable() {
+        @Override
+        public void run() {
+            persistCurrentGraphToDbAndRefreshExtremaAsync();
+        }
+    };
 
     private float zoom = 1.0f;
     private double centerX = 0.0;
@@ -55,6 +76,15 @@ public class GraphCanvasView extends View {
     private float lastTouchY = 0f;
     private boolean isDragging = false;
 
+    // Флаг необходимости пересчёта sampledPoints и graphPath.
+    private boolean graphDataDirty = true;
+
+    private int graphRevision = 0;
+
+    private final List<GraphPoint> sampledPoints = new ArrayList<>();
+    private final List<GraphPoint> extremaPoints = new ArrayList<>();
+    private final Path graphPath = new Path();
+
     private OnPointSelectedListener onPointSelectedListener;
 
     public interface OnPointSelectedListener {
@@ -66,6 +96,7 @@ public class GraphCanvasView extends View {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         scaleDetector = new ScaleGestureDetector(context, new ScaleListener());
         gestureDetector = new GestureDetector(context, new TapListener());
+        dbHelper = new GraphDatabaseHelper(context.getApplicationContext());
         init();
     }
 
@@ -74,6 +105,7 @@ public class GraphCanvasView extends View {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         scaleDetector = new ScaleGestureDetector(context, new ScaleListener());
         gestureDetector = new GestureDetector(context, new TapListener());
+        dbHelper = new GraphDatabaseHelper(context.getApplicationContext());
         init();
     }
 
@@ -82,6 +114,7 @@ public class GraphCanvasView extends View {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         scaleDetector = new ScaleGestureDetector(context, new ScaleListener());
         gestureDetector = new GestureDetector(context, new TapListener());
+        dbHelper = new GraphDatabaseHelper(context.getApplicationContext());
         init();
     }
 
@@ -113,6 +146,15 @@ public class GraphCanvasView extends View {
         textPaint.setTextSize(24f);
         textPaint.setAntiAlias(true);
 
+        extremaFillPaint.setColor(Color.YELLOW);
+        extremaFillPaint.setStyle(Paint.Style.FILL);
+        extremaFillPaint.setAntiAlias(true);
+
+        extremaStrokePaint.setColor(Color.BLACK);
+        extremaStrokePaint.setStyle(Paint.Style.STROKE);
+        extremaStrokePaint.setStrokeWidth(3f);
+        extremaStrokePaint.setAntiAlias(true);
+
         setBackgroundColor(Color.WHITE);
     }
 
@@ -127,18 +169,55 @@ public class GraphCanvasView extends View {
         int width = getWidth();
         int height = getHeight();
 
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+
+        ensureGraphDataPrepared(width, height);
+
         drawGrid(canvas, width, height);
         drawAxes(canvas, width, height);
         drawAxisLabels(canvas, width, height);
-        drawGraph(canvas, width, height);
+        drawGraph(canvas);
+        drawExtrema(canvas, width, height);
 
         if (pointSelected) {
             drawSelectedPoint(canvas, width, height);
         }
     }
 
+    private void ensureGraphDataPrepared(int width, int height) {
+        if (!graphDataDirty) {
+            return;
+        }
+
+        sampledPoints.clear();
+        graphPath.reset();
+
+        boolean firstPoint = true;
+
+        for (int px = 0; px <= width; px++) {
+            double x = screenToMathX(px, width);
+            double y = calculateY(x);
+
+            GraphPoint point = new GraphPoint(px, x, y);
+            sampledPoints.add(point);
+
+            float screenX = px;
+            float screenY = mapY(y, height);
+
+            if (firstPoint) {
+                graphPath.moveTo(screenX, screenY);
+                firstPoint = false;
+            } else {
+                graphPath.lineTo(screenX, screenY);
+            }
+        }
+
+        graphDataDirty = false;
+    }
+
     private void drawGrid(Canvas canvas, int width, int height) {
-        // Шаг сетки всегда 30x30 пикселей — основное ТЗ сохраняется
         for (int x = 0; x <= width; x += GRID_STEP) {
             canvas.drawLine(x, 0, x, height, gridPaint);
         }
@@ -201,7 +280,6 @@ public class GraphCanvasView extends View {
                 continue;
             }
 
-            // Небольшая риска на оси
             canvas.drawLine(sx, xAxisY - 8f, sx, xAxisY + 8f, axisPaint);
 
             String text = formatAxisValue(value);
@@ -210,8 +288,12 @@ public class GraphCanvasView extends View {
             float textX = sx - textWidth / 2f;
             float textY = xAxisY + 28f;
 
-            if (textX < 2f) textX = 2f;
-            if (textX + textWidth > width - 2f) textX = width - textWidth - 2f;
+            if (textX < 2f) {
+                textX = 2f;
+            }
+            if (textX + textWidth > width - 2f) {
+                textX = width - textWidth - 2f;
+            }
 
             if (textY > getHeight() - 4f) {
                 textY = xAxisY - 12f;
@@ -234,7 +316,6 @@ public class GraphCanvasView extends View {
                 continue;
             }
 
-            // Небольшая риска на оси
             canvas.drawLine(yAxisX - 8f, sy, yAxisX + 8f, sy, axisPaint);
 
             String text = formatAxisValue(value);
@@ -295,26 +376,26 @@ public class GraphCanvasView extends View {
         return String.format(Locale.US, "%.2f", value).replace('.', ',');
     }
 
-    private void drawGraph(Canvas canvas, int width, int height) {
-        Path path = new Path();
-        boolean firstPoint = true;
-
-        for (int px = 0; px <= width; px++) {
-            double x = screenToMathX(px, width);
-            double y = calculateY(x);
-
-            float screenX = mapX(x, width);
-            float screenY = mapY(y, height);
-
-            if (firstPoint) {
-                path.moveTo(screenX, screenY);
-                firstPoint = false;
-            } else {
-                path.lineTo(screenX, screenY);
-            }
+    private void drawGraph(Canvas canvas) {
+        if (sampledPoints.isEmpty()) {
+            return;
         }
 
-        canvas.drawPath(path, graphPaint);
+        canvas.drawPath(graphPath, graphPaint);
+    }
+
+    private void drawExtrema(Canvas canvas, int width, int height) {
+        for (GraphPoint point : extremaPoints) {
+            float sx = mapX(point.x, width);
+            float sy = mapY(point.y, height);
+
+            if (sx < -20 || sx > width + 20 || sy < -20 || sy > height + 20) {
+                continue;
+            }
+
+            canvas.drawCircle(sx, sy, 12f, extremaFillPaint);
+            canvas.drawCircle(sx, sy, 12f, extremaStrokePaint);
+        }
     }
 
     private void drawSelectedPoint(Canvas canvas, int width, int height) {
@@ -341,6 +422,7 @@ public class GraphCanvasView extends View {
                 lastTouchX = event.getX();
                 lastTouchY = event.getY();
                 isDragging = false;
+                removeCallbacks(dbSyncRunnable);
                 return true;
 
             case MotionEvent.ACTION_MOVE:
@@ -361,7 +443,9 @@ public class GraphCanvasView extends View {
                     panByPixels(dx, dy, getWidth(), getHeight());
                     lastTouchX = event.getX();
                     lastTouchY = event.getY();
-                    invalidate();
+
+                    markGraphDirtyAndRedraw();
+                    scheduleDbSync();
                 }
 
                 return true;
@@ -369,6 +453,7 @@ public class GraphCanvasView extends View {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
                 isDragging = false;
+                scheduleDbSync();
                 return true;
 
             default:
@@ -376,7 +461,57 @@ public class GraphCanvasView extends View {
         }
     }
 
+    private void markGraphDirtyAndRedraw() {
+        graphDataDirty = true;
+        graphRevision++;
+        invalidate();
+    }
+
+    private void scheduleDbSync() {
+        removeCallbacks(dbSyncRunnable);
+        postDelayed(dbSyncRunnable, DB_SYNC_DELAY_MS);
+    }
+
+    private void persistCurrentGraphToDbAndRefreshExtremaAsync() {
+        int width = getWidth();
+        int height = getHeight();
+
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+
+        ensureGraphDataPrepared(width, height);
+
+        final int revisionSnapshot = graphRevision;
+        final List<GraphPoint> pointsSnapshot = new ArrayList<>(sampledPoints);
+
+        dbExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                dbHelper.replacePoints(pointsSnapshot);
+                final List<GraphPoint> dbExtrema = dbHelper.findExtremaPoints();
+
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (revisionSnapshot != graphRevision) {
+                            return;
+                        }
+
+                        extremaPoints.clear();
+                        extremaPoints.addAll(dbExtrema);
+                        invalidate();
+                    }
+                });
+            }
+        });
+    }
+
     private void panByPixels(float dx, float dy, int width, int height) {
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+
         double visibleXSpan = getVisibleXSpan();
         double visibleYSpan = getVisibleYSpan();
 
@@ -424,9 +559,19 @@ public class GraphCanvasView extends View {
         return getVisibleTop() - (screenY / height) * getVisibleYSpan();
     }
 
-    private void selectPointAt(float screenX, int width) {
-        selectedX = screenToMathX(screenX, width);
-        selectedY = calculateY(selectedX);
+    private void selectPointAt(float screenX, float screenY, int width, int height) {
+        ensureGraphDataPrepared(width, height);
+
+        GraphPoint tappedExtremum = findExtremumNear(screenX, screenY, width, height);
+
+        if (tappedExtremum != null) {
+            selectedX = tappedExtremum.x;
+            selectedY = tappedExtremum.y;
+        } else {
+            selectedX = screenToMathX(screenX, width);
+            selectedY = calculateY(selectedX);
+        }
+
         pointSelected = true;
 
         if (onPointSelectedListener != null) {
@@ -436,11 +581,50 @@ public class GraphCanvasView extends View {
         invalidate();
     }
 
+    private GraphPoint findExtremumNear(float touchX, float touchY, int width, int height) {
+        for (GraphPoint point : extremaPoints) {
+            float sx = mapX(point.x, width);
+            float sy = mapY(point.y, height);
+
+            float dx = touchX - sx;
+            float dy = touchY - sy;
+            float distance = (float) Math.hypot(dx, dy);
+
+            if (distance <= EXTREMUM_TAP_RADIUS_PX) {
+                return point;
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        graphDataDirty = true;
+        graphRevision++;
+        scheduleDbSync();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        scheduleDbSync();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        removeCallbacks(dbSyncRunnable);
+        dbExecutor.shutdownNow();
+        dbHelper.close();
+    }
+
     private class TapListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
             if (!scaleDetector.isInProgress() && !isDragging) {
-                selectPointAt(e.getX(), getWidth());
+                selectPointAt(e.getX(), e.getY(), getWidth(), getHeight());
                 return true;
             }
             return false;
@@ -448,6 +632,13 @@ public class GraphCanvasView extends View {
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+
+        @Override
+        public boolean onScaleBegin(ScaleGestureDetector detector) {
+            removeCallbacks(dbSyncRunnable);
+            return true;
+        }
+
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             int width = getWidth();
@@ -469,8 +660,14 @@ public class GraphCanvasView extends View {
             centerX = focusMathXBefore - (detector.getFocusX() / width - 0.5) * newXSpan;
             centerY = focusMathYBefore - (0.5 - detector.getFocusY() / height) * newYSpan;
 
-            invalidate();
+            markGraphDirtyAndRedraw();
+            scheduleDbSync();
             return true;
+        }
+
+        @Override
+        public void onScaleEnd(ScaleGestureDetector detector) {
+            scheduleDbSync();
         }
     }
 }

@@ -60,7 +60,7 @@ public class GraphCanvasView extends View {
     private final Runnable dbSyncRunnable = new Runnable() {
         @Override
         public void run() {
-            persistCurrentGraphToDbAsync();
+            persistCurrentGraphToDbAndRefreshExtremaAsync();
         }
     };
 
@@ -76,7 +76,10 @@ public class GraphCanvasView extends View {
     private float lastTouchY = 0f;
     private boolean isDragging = false;
 
+    // Флаг необходимости пересчёта sampledPoints и graphPath.
     private boolean graphDataDirty = true;
+
+    private int graphRevision = 0;
 
     private final List<GraphPoint> sampledPoints = new ArrayList<>();
     private final List<GraphPoint> extremaPoints = new ArrayList<>();
@@ -189,7 +192,6 @@ public class GraphCanvasView extends View {
         }
 
         sampledPoints.clear();
-        extremaPoints.clear();
         graphPath.reset();
 
         boolean firstPoint = true;
@@ -212,27 +214,7 @@ public class GraphCanvasView extends View {
             }
         }
 
-        findExtremaInMemory(sampledPoints, extremaPoints);
         graphDataDirty = false;
-    }
-
-    private void findExtremaInMemory(List<GraphPoint> source, List<GraphPoint> target) {
-        if (source.size() < 3) {
-            return;
-        }
-
-        for (int i = 1; i < source.size() - 1; i++) {
-            GraphPoint prev = source.get(i - 1);
-            GraphPoint curr = source.get(i);
-            GraphPoint next = source.get(i + 1);
-
-            boolean isMaximum = curr.y > prev.y && curr.y > next.y;
-            boolean isMinimum = curr.y < prev.y && curr.y < next.y;
-
-            if (isMaximum || isMinimum) {
-                target.add(curr);
-            }
-        }
     }
 
     private void drawGrid(Canvas canvas, int width, int height) {
@@ -462,9 +444,7 @@ public class GraphCanvasView extends View {
                     lastTouchX = event.getX();
                     lastTouchY = event.getY();
 
-                    graphDataDirty = true;
-                    invalidate();
-
+                    markGraphDirtyAndRedraw();
                     scheduleDbSync();
                 }
 
@@ -481,12 +461,18 @@ public class GraphCanvasView extends View {
         }
     }
 
+    private void markGraphDirtyAndRedraw() {
+        graphDataDirty = true;
+        graphRevision++;
+        invalidate();
+    }
+
     private void scheduleDbSync() {
         removeCallbacks(dbSyncRunnable);
         postDelayed(dbSyncRunnable, DB_SYNC_DELAY_MS);
     }
 
-    private void persistCurrentGraphToDbAsync() {
+    private void persistCurrentGraphToDbAndRefreshExtremaAsync() {
         int width = getWidth();
         int height = getHeight();
 
@@ -496,12 +482,27 @@ public class GraphCanvasView extends View {
 
         ensureGraphDataPrepared(width, height);
 
-        final List<GraphPoint> snapshot = new ArrayList<>(sampledPoints);
+        final int revisionSnapshot = graphRevision;
+        final List<GraphPoint> pointsSnapshot = new ArrayList<>(sampledPoints);
 
         dbExecutor.execute(new Runnable() {
             @Override
             public void run() {
-                dbHelper.replacePoints(snapshot);
+                dbHelper.replacePoints(pointsSnapshot);
+                final List<GraphPoint> dbExtrema = dbHelper.findExtremaPoints();
+
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (revisionSnapshot != graphRevision) {
+                            return;
+                        }
+
+                        extremaPoints.clear();
+                        extremaPoints.addAll(dbExtrema);
+                        invalidate();
+                    }
+                });
             }
         });
     }
@@ -601,6 +602,13 @@ public class GraphCanvasView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         graphDataDirty = true;
+        graphRevision++;
+        scheduleDbSync();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
         scheduleDbSync();
     }
 
@@ -652,8 +660,7 @@ public class GraphCanvasView extends View {
             centerX = focusMathXBefore - (detector.getFocusX() / width - 0.5) * newXSpan;
             centerY = focusMathYBefore - (0.5 - detector.getFocusY() / height) * newYSpan;
 
-            graphDataDirty = true;
-            invalidate();
+            markGraphDirtyAndRedraw();
             scheduleDbSync();
             return true;
         }
